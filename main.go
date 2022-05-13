@@ -9,16 +9,17 @@ import (
 )
 
 func main() {
-	importFile, err := os.Open("Gazetteer2012GML.gml")
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("Gazetteer file open")
-	}
+	importFileName := "example.gml"
+	importFile, iferr := os.Open(importFileName)
+	checkError(iferr, "iferror")
+	fmt.Println("Gazetteer file open")
+
 	defer importFile.Close()
 
-	outfile, oferr := os.Create("gazetteer.csv")
-	checkError(oferr)
+	exportFileName := "gazetteer.csv"
+	outfile, oferr := os.Create(exportFileName)
+	checkError(oferr, "oferror")
+
 	defer outfile.Close()
 
 	csvHeaders := []string{"Name", "Variants", "State", "Decimal latitude",
@@ -36,7 +37,7 @@ func main() {
 			if tokenErr == io.EOF {
 				break
 			}
-			panic(tokenErr)
+			checkError(tokenErr, "tokenerror")
 		}
 		switch ty := t.(type) {
 		case xml.StartElement:
@@ -99,8 +100,17 @@ func (fm *FeatureMember) writeToCSV(exportFile csv.Writer) {
 	exportFile.Flush()
 }
 
-func checkError(err error) {
+func checkError(err error, code string) {
 	if err != nil {
-		panic(err)
+		switch code {
+		case "iferror":
+			fmt.Println("ERROR: Could not open gazetteer import file (Expecting Gazetteer2012GML.gml)")
+		case "oferror":
+			fmt.Println("ERROR: Could not create gazetteer export file (Attempting to create gazetteer.csv)")
+		case "tokenerror":
+			fmt.Println("ERROR: Did not obtain expected XML token")
+			panic(err)
+		}
+		os.Exit(1)
 	}
 }
